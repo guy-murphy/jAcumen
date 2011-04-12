@@ -1,0 +1,467 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>BNF for WikiParser.jj </TITLE>
+</HEAD>
+<BODY>
+<H1 ALIGN=CENTER>BNF for WikiParser.jj </H1>
+<H2 ALIGN=CENTER>TOKENS</H2>
+<TABLE>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;DEFAULT&gt; SKIP : {
+"\u00ae"
+| "\u00a9"
+}
+
+   </PRE>
+  </TD>
+ </TR>
+ <!-- Special token -->
+ <TR>
+  <TD>
+<PRE>
+/**************************
+ **** SOFT PRODUCTIONS ****
+ **************************/
+
+// These are placed here to have a higher priority from
+// the true terminal tokens but logically extend the
+// terminal tokens provided bellow. I'm not sure yet
+// whether this section is a good idea, or whether
+// it should really be done with productions.
+</PRE>
+  </TD>
+ </TR>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;*&gt; TOKEN : {
+&lt;URL: ("http" | "ftp" | "https" | "ftps") "://" (&lt;SOLID_TEXT&gt;)+&gt;
+| &lt;TOPIC_LINK: "[" &lt;WIKI_NAME&gt; "]"&gt; : {
+| &lt;LINK: "[" &lt;TEXT&gt; "]"&gt;
+}
+
+   </PRE>
+  </TD>
+ </TR>
+ <!-- Special token -->
+ <TR>
+  <TD>
+<PRE>
+/*** HEADINGS ***/</PRE>
+  </TD>
+ </TR>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;DEFAULT&gt; TOKEN : {
+&lt;#HEADING: ("="){2,5}&gt;
+| &lt;OPEN_HEADING: &lt;HEADING&gt;&gt; : IN_HEADING
+}
+
+   </PRE>
+  </TD>
+ </TR>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;IN_HEADING&gt; TOKEN : {
+&lt;CLOSE_HEADING: &lt;HEADING&gt;&gt; : DEFAULT
+}
+
+   </PRE>
+  </TD>
+ </TR>
+ <!-- Special token -->
+ <TR>
+  <TD>
+<PRE>
+/*** BOXES ***/</PRE>
+  </TD>
+ </TR>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;DEFAULT&gt; TOKEN : {
+&lt;#BLOCK_BOX: "***" ("*")*&gt;
+| &lt;#BLOCK_QUOTE: "~~~" ("~")*&gt;
+| &lt;#BLOCK_CODE: "###" ("#")*&gt;
+| &lt;#BLOCK_TABLE: "---" ("-")*&gt;
+| &lt;#BLOCK_FORM: "+++" ("+")*&gt;
+| &lt;OPEN_BLOCK_BOX: &lt;BLOCK_BOX&gt; &lt;NL&gt;&gt; : IN_BLOCK
+| &lt;OPEN_BLOCK_QUOTE: &lt;BLOCK_QUOTE&gt; &lt;NL&gt;&gt; : IN_BLOCK
+| &lt;OPEN_BLOCK_CODE: &lt;BLOCK_CODE&gt; &lt;NL&gt;&gt; : IN_BLOCK
+| &lt;OPEN_BLOCK_TABLE: &lt;BLOCK_TABLE&gt; &lt;NL&gt;&gt; : IN_BLOCK
+| &lt;OPEN_BLOCK_FORM: &lt;BLOCK_FORM&gt; &lt;NL&gt;&gt; : IN_BLOCK
+}
+
+   </PRE>
+  </TD>
+ </TR>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;IN_BLOCK&gt; TOKEN : {
+&lt;BLOCK_TITLE: "." &lt;SAFE_TEXT&gt; &lt;NL&gt;&gt; : {
+| &lt;CLOSE_BLOCK_BOX: &lt;BLOCK_BOX&gt; &lt;NL&gt;&gt; : DEFAULT
+| &lt;CLOSE_BLOCK_QUOTE: &lt;BLOCK_QUOTE&gt; &lt;NL&gt;&gt; : DEFAULT
+| &lt;CLOSE_BLOCK_CODE: &lt;BLOCK_CODE&gt; &lt;NL&gt;&gt; : DEFAULT
+| &lt;CLOSE_BLOCK_TABLE: &lt;BLOCK_TABLE&gt; &lt;NL&gt;&gt; : DEFAULT
+| &lt;CLOSE_BLOCK_FORM: &lt;BLOCK_FORM&gt; &lt;NL&gt;&gt; : DEFAULT
+}
+
+   </PRE>
+  </TD>
+ </TR>
+ <!-- Special token -->
+ <TR>
+  <TD>
+<PRE>
+/*************************
+ **** TERMINAL TOKENS ****
+ *************************/
+
+// These all match within the universal state <*>
+// meaning they will match even if you're switching
+// in and out of other states for block
+// matching etc.
+
+// Terminal tokens should be kept as simple as
+// possible with complicated matching take place with
+// productions.
+</PRE>
+  </TD>
+ </TR>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;*&gt; TOKEN : {
+&lt;#UNKNOWN: ~[]&gt;
+| &lt;#NONASCII: ["\u0080"-"\uffff"]&gt;
+}
+
+   </PRE>
+  </TD>
+ </TR>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;*&gt; TOKEN : {
+&lt;OPEN_ANCHOR: "&lt;&lt;"&gt;
+| &lt;CLOSE_ANCHOR: "&gt;&gt;"&gt;
+}
+
+   </PRE>
+  </TD>
+ </TR>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;*&gt; TOKEN : {
+&lt;SAFE_TEXT: (&lt;ALPHA_NUMERIC&gt; | &lt;NUMBER&gt; | &lt;SAFE_SYMBOL&gt; | &lt;WIKI_NAME&gt; | &lt;WS&gt;)+&gt;
+| &lt;#WIKI_NAME: (["A"-"Z"] (["a"-"z","A"-"Z"])* (["A"-"Z"] (["a"-"z","A"-"Z"])+)+)+&gt;
+| &lt;#NUMBER: (&lt;DIGIT&gt;)+ ((&lt;POINT&gt; | &lt;COMMA&gt;) (&lt;DIGIT&gt;)+)*&gt;
+| &lt;#ALPHA_NUMERIC: &lt;NUMBER&gt; &lt;ALPHA&gt; (&lt;NUMBER&gt; | &lt;ALPHA&gt;)* | (&lt;ALPHA&gt; (&lt;NUMBER&gt; | &lt;ALPHA&gt;)*)+&gt;
+| &lt;#DIGIT: ["0"-"9"]&gt;
+| &lt;#UPPER: ["A"-"Z"]&gt;
+| &lt;#LOWER: ["a"-"z"]&gt;
+| &lt;#ALPHA: &lt;LOWER&gt; | &lt;UPPER&gt;&gt;
+| &lt;#SOLID_TEXT: (~[" ","\t","\r","\n"])+&gt;
+| &lt;#TEXT: (&lt;ALPHA_NUMERIC&gt; | &lt;SYMBOL&gt; | &lt;WS&gt;)+&gt;
+}
+
+   </PRE>
+  </TD>
+ </TR>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;*&gt; TOKEN : {
+&lt;#SPACE: " "&gt;
+| &lt;#TAB: "\t"&gt;
+| &lt;WS: &lt;SPACE&gt; | &lt;TAB&gt;&gt;
+| &lt;NL: "\n" | "\r" | "\r\n"&gt;
+}
+
+   </PRE>
+  </TD>
+ </TR>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;*&gt; TOKEN : {
+&lt;NON_MARKUP_SYMBOL: &lt;DIVIDE&gt; | &lt;PERCENT&gt; | &lt;APOS&gt; | &lt;QUOTE&gt; | &lt;POUND&gt; | &lt;DOLAR&gt; | &lt;AMP&gt; | &lt;OPEN_PAREN&gt; | &lt;CLOSE_PAREN&gt; | &lt;OPEN_BRACE&gt; | &lt;CLOSE_BRACE&gt; | &lt;SEMICOLON&gt; | &lt;AT&gt; | &lt;COLON&gt; | &lt;COMMA&gt; | &lt;POINT&gt; | &lt;QUESTION&gt; | &lt;EXCLAIM&gt; | &lt;LT&gt; | &lt;GT&gt; | &lt;BACKSLASH&gt; | &lt;UNDERSCORE&gt;&gt;
+| &lt;#MARKUP_SYMBOL: &lt;PLUS&gt; | &lt;MINUS&gt; | &lt;MULTIPLY&gt; | &lt;EQUALS&gt; | &lt;TILDE&gt; | &lt;HASH&gt; | &lt;HAT&gt; | &lt;ACUTE&gt; | &lt;BAR&gt; | &lt;OPEN_INDEX&gt; | &lt;CLOSE_INDEX&gt;&gt;
+| &lt;ESCAPED_SYMBOL: &lt;ESC_PLUS&gt; | &lt;ESC_MINUS&gt; | &lt;ESC_MULTIPLY&gt; | &lt;ESC_EQUALS&gt; | &lt;ESC_TILDE&gt; | &lt;ESC_HASH&gt; | &lt;ESC_HAT&gt; | &lt;ESC_ACUTE&gt; | &lt;ESC_BAR&gt; | &lt;ESC_OPEN_INDEX&gt; | &lt;ESC_CLOSE_INDEX&gt;&gt; : {
+| &lt;SPECIAL_SYMBOL: &lt;FURTHER&gt;&gt;
+| &lt;#SYMBOL: &lt;MARKUP_SYMBOL&gt; | &lt;SAFE_SYMBOL&gt; | &lt;ESCAPED_SYMBOL&gt; | &lt;SPECIAL_SYMBOL&gt;&gt;
+| &lt;#SAFE_SYMBOL: &lt;NON_MARKUP_SYMBOL&gt; | &lt;ESCAPED_SYMBOL&gt; | &lt;SPECIAL_SYMBOL&gt;&gt;
+}
+
+   </PRE>
+  </TD>
+ </TR>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;*&gt; TOKEN : {
+&lt;#FURTHER: ":-"&gt;
+}
+
+   </PRE>
+  </TD>
+ </TR>
+ <!-- Token -->
+ <TR>
+  <TD>
+   <PRE>
+&lt;*&gt; TOKEN : {
+&lt;PLUS: "+"&gt;
+| &lt;MINUS: "-"&gt;
+| &lt;MULTIPLY: "*"&gt;
+| &lt;EQUALS: "="&gt;
+| &lt;TILDE: "~"&gt;
+| &lt;HASH: "#"&gt;
+| &lt;HAT: "^"&gt;
+| &lt;ACUTE: "`"&gt;
+| &lt;BAR: "|"&gt;
+| &lt;OPEN_INDEX: "["&gt;
+| &lt;CLOSE_INDEX: "]"&gt;
+| &lt;#DIVIDE: "/"&gt;
+| &lt;#PERCENT: "%"&gt;
+| &lt;#APOS: "\'"&gt;
+| &lt;#QUOTE: "\""&gt;
+| &lt;#POUND: "\u00a3"&gt;
+| &lt;#DOLAR: "$"&gt;
+| &lt;#AMP: "&amp;"&gt;
+| &lt;#OPEN_PAREN: "("&gt;
+| &lt;#CLOSE_PAREN: ")"&gt;
+| &lt;#OPEN_BRACE: "{"&gt;
+| &lt;#CLOSE_BRACE: "}"&gt;
+| &lt;#COLON: ":"&gt;
+| &lt;#SEMICOLON: ";"&gt;
+| &lt;#AT: "@"&gt;
+| &lt;#COMMA: ","&gt;
+| &lt;#POINT: "."&gt;
+| &lt;#QUESTION: "?"&gt;
+| &lt;#EXCLAIM: "!"&gt;
+| &lt;#LT: "&lt;"&gt;
+| &lt;#GT: "&gt;"&gt;
+| &lt;#BACKSLASH: "\\"&gt;
+| &lt;#UNDERSCORE: "_"&gt;
+| &lt;#ESC_PLUS: "\\+"&gt;
+| &lt;#ESC_MINUS: "\\-"&gt;
+| &lt;#ESC_MULTIPLY: "\\*"&gt;
+| &lt;#ESC_EQUALS: "\\="&gt;
+| &lt;#ESC_TILDE: "\\~"&gt;
+| &lt;#ESC_HASH: "\\#"&gt;
+| &lt;#ESC_HAT: "\\^"&gt;
+| &lt;#ESC_ACUTE: "\\`"&gt;
+| &lt;#ESC_BAR: "\\|"&gt;
+| &lt;#ESC_OPEN_INDEX: "\\["&gt;
+| &lt;#ESC_CLOSE_INDEX: "\\]"&gt;
+}
+
+   </PRE>
+  </TD>
+ </TR>
+</TABLE>
+<H2 ALIGN=CENTER>NON-TERMINALS</H2>
+<TABLE>
+ <!-- Special token -->
+ <TR>
+  <TD>
+<PRE>
+/*************************************
+ **** NON-TERMINALS / PRODUCTIONS ****
+ *************************************/
+
+// this is where we infer higher order
+// compositions of the base tokens
+// all "clever" matching should occur here
+
+/* Inline Products */</PRE>
+  </TD>
+ </TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod1">wiki</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>( <A HREF="#prod2">empty_line</A> | <A HREF="#prod3">list</A> | <A HREF="#prod4">blocks</A> | <A HREF="#prod5">heading</A> )*</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod6">line</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE><A HREF="#prod7">content</A> <A HREF="#prod8">new_line</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod9">lines</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>( <A HREF="#prod6">line</A> | <A HREF="#prod2">empty_line</A> )+</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod10">box</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;OPEN_BLOCK_BOX&gt; <A HREF="#prod11">block_content</A> &lt;CLOSE_BLOCK_BOX&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod12">table</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;OPEN_BLOCK_TABLE&gt; <A HREF="#prod11">block_content</A> &lt;CLOSE_BLOCK_TABLE&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod13">block_quote</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;OPEN_BLOCK_QUOTE&gt; <A HREF="#prod11">block_content</A> &lt;CLOSE_BLOCK_QUOTE&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod14">block_code</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;OPEN_BLOCK_CODE&gt; <A HREF="#prod11">block_content</A> &lt;CLOSE_BLOCK_CODE&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod15">form</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;OPEN_BLOCK_FORM&gt; <A HREF="#prod11">block_content</A> &lt;CLOSE_BLOCK_FORM&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod16">block</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE><A HREF="#prod11">block_content</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod11">block_content</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>( <A HREF="#prod17">block_title</A> )? <A HREF="#prod9">lines</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod17">block_title</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;BLOCK_TITLE&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod4">blocks</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE><A HREF="#prod16">block</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>|</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE><A HREF="#prod13">block_quote</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>|</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE><A HREF="#prod12">table</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>|</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE><A HREF="#prod10">box</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>|</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE><A HREF="#prod14">block_code</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>|</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE><A HREF="#prod15">form</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod2">empty_line</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>( <A HREF="#prod18">whitespace</A> )* <A HREF="#prod8">new_line</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod18">whitespace</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;WS&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod8">new_line</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;NL&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod3">list</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>( <A HREF="#prod19">list_item</A> )+</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod19">list_item</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>( &lt;MULTIPLY&gt; )+ <A HREF="#prod7">content</A> &lt;NL&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod20">safe_text</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;SAFE_TEXT&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod21">emphasis</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;HAT&gt; ( <A HREF="#prod20">safe_text</A> | <A HREF="#prod22">bold</A> | <A HREF="#prod23">link</A> | <A HREF="#prod24">url</A> )+ &lt;HAT&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod22">bold</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;MULTIPLY&gt; ( <A HREF="#prod20">safe_text</A> | <A HREF="#prod21">emphasis</A> | <A HREF="#prod25">links</A> )+ &lt;MULTIPLY&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod23">link</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;LINK&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod26">topic_link</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;TOPIC_LINK&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod24">url</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;URL&gt;</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod25">links</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE><A HREF="#prod23">link</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>|</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE><A HREF="#prod26">topic_link</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>|</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE><A HREF="#prod24">url</A></TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod7">content</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>( <A HREF="#prod20">safe_text</A> | <A HREF="#prod22">bold</A> | <A HREF="#prod21">emphasis</A> | <A HREF="#prod18">whitespace</A> | <A HREF="#prod25">links</A> )+</TD>
+</TR>
+<TR>
+<TD ALIGN=RIGHT VALIGN=BASELINE><A NAME="prod5">heading</A></TD>
+<TD ALIGN=CENTER VALIGN=BASELINE>::=</TD>
+<TD ALIGN=LEFT VALIGN=BASELINE>&lt;OPEN_HEADING&gt; <A HREF="#prod20">safe_text</A> &lt;CLOSE_HEADING&gt; <A HREF="#prod8">new_line</A></TD>
+</TR>
+</TABLE>
+</BODY>
+</HTML>

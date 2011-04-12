@@ -1,0 +1,306 @@
+/**
+ * JavaCC file
+ * Author:	Guy J. Murphy
+ * Date:	16/12/2009
+ * Version: 0.2
+ */
+ 
+options {
+  JDK_VERSION = "1.6";
+  STATIC = false;
+  UNICODE_INPUT = true;
+  CACHE_TOKENS = true;
+  LOOKAHEAD = 9; // 1 is the default
+  CHOICE_AMBIGUITY_CHECK = 4; // 2 is the default
+  OTHER_AMBIGUITY_CHECK = 2; // 1 is the default
+  FORCE_LA_CHECK = true; // false is the default
+}
+PARSER_BEGIN(WikiParser)
+package acumen.parser.scanner;
+
+import acumen.parser.model.*;
+import acumen.util.StringUtil;
+
+public class WikiParser extends acumen.parser.BaseParser {
+	// We implement novel behaviour in the BaseParser
+	// rather than here, as it's simply a more suitable/easier
+	// place to develop.
+}
+PARSER_END(WikiParser)
+
+/**********************************
+ **** LEXICAL ACTION FUNCTIONS ****
+ **********************************/
+
+// These functions are available to lexical actions
+// only as they get rolled into the token manager.
+// They are NOT visible to semantic actions / productions.
+
+TOKEN_MGR_DECLS:{	// A bunch of helpers to tweak and shape strings.
+	
+	public void trimEndsBy(Token token, int numberOfCharacters)	{		token.image = StringUtil.trimEndsBy(token.image, numberOfCharacters);
+	}
+
+	public void trimLeftBy(Token token, int numberOfCharacters)	{
+		token.image = StringUtil.trimLeftBy(token.image, numberOfCharacters);	}
+
+	public void trimRightBy(Token token, int numberOfCharacters)
+	{
+		token.image = StringUtil.trimLeftBy(token.image, numberOfCharacters);
+	}
+}
+
+/******************************
+ **** SCANNER/LEXER/TOKENS ****
+ ******************************/
+ 
+// This is where we specify our tokens.
+// These tokens are public or private.
+// Private tokens are prepended with #
+// All public tokens should be terminal,
+// and not participate as components
+// in "higher level" tokens. This is what
+// productions are for.
+
+// Those tokens defined at the top have
+// a higher precedence than those that follow
+// them. So all the real low level stuff
+// actually come after the more abstracted
+// stuff.
+
+/*** HEADINGS ***/
+<DEFAULT>
+TOKEN:
+{
+	< #HEADING		: ("="){2,5} >
+|	< OPEN_HEADING	: <HEADING> > : IN_HEADING
+}
+<IN_HEADING>
+TOKEN:
+{
+	< CLOSE_HEADING	: <HEADING> > : DEFAULT
+}
+
+/*** BOXES ***/
+<DEFAULT>
+TOKEN:
+{
+	< #BLOCK_BOX		: "***"("*")* >
+|	< #BLOCK_QUOTE		: "~~~"("~")* >
+|	< #BLOCK_CODE		: "###"("#")* >
+|	< #BLOCK_FORM		: "+++"("+")* >
+|	< OPEN_BLOCK_BOX	: <BLOCK_BOX><NL> 	> : IN_BLOCK 
+|	< OPEN_BLOCK_QUOTE	: <BLOCK_QUOTE><NL>	> : IN_BLOCK
+|	< OPEN_BLOCK_CODE	: <BLOCK_CODE><NL>	> : IN_BLOCK
+|	< OPEN_BLOCK_FORM	: <BLOCK_FORM><NL>	> : IN_BLOCK
+}
+<IN_BLOCK>
+TOKEN:
+{
+	< BLOCK_TITLE		: "."<SAFE_TEXT><NL>>{ trimLeftBy(matchedToken,1); }
+|	< CLOSE_BLOCK_BOX	: <BLOCK_BOX><NL>	>: DEFAULT
+|	< CLOSE_BLOCK_QUOTE	: <BLOCK_QUOTE><NL> >: DEFAULT
+|	< CLOSE_BLOCK_CODE	: <BLOCK_CODE><NL>	>: DEFAULT
+|	< CLOSE_BLOCK_FORM	: <BLOCK_FORM><NL>	>: DEFAULT
+}
+/*** TABLES ***/
+<DEFAULT>
+TOKEN:
+{
+	< #BLOCK_TABLE		: "---"("-")* >
+|	< OPEN_BLOCK_TABLE	: <BLOCK_TABLE><NL> > : IN_TABLE
+}
+<IN_TABLE>
+TOKEN:
+{
+	< CLOSE_BLOCK_TABLE	: <BLOCK_TABLE><NL>	>: DEFAULT
+}
+
+/* MARKUP */
+
+<*>
+TOKEN:
+{
+	< OPEN_ANCHOR	:	"<<" >
+|	< CLOSE_ANCHOR	:	">>" >
+}
+
+<*>
+TOKEN:
+{
+	< URL: ("http"|"ftp"|"https"|"ftps")"://"(<SOLID_TEXT>) >
+|	< TOPIC_LINK: "["<WIKI_NAME>"]" >{ trimEndsBy(matchedToken, 1); }
+|	< LINK: "["<TEXT>"]" >
+}
+
+/* BASIC CHARACTERS */
+
+<*>
+TOKEN : /* TEXT */
+{
+	< WIKI_NAME		:	(((["A"-"Z"])(["a"-"z","A"-"Z"])*)((["A"-"Z"])(["a"-"z","A"-"Z"])+)+)+ >
+|	< NUMBER		:	(<DIGIT>)+((<POINT>|<COMMA>)(<DIGIT>)+)* >
+|	< ALPHA_NUMERIC	:	(<NUMBER><ALPHA>(<NUMBER>|<ALPHA>)*)|(<ALPHA>(<NUMBER>|<ALPHA>)*)+ >
+|	< #ALPHA		:	<LOWER>|<UPPER> >
+|	< #DIGIT		:	["0" - "9"] >
+|	< #UPPER		:	["A" - "Z"] >
+|	< #LOWER		:	["a" - "z"] >
+|	< #SOLID_TEXT	:	(~[" ","	","\r","\n"])+ >
+|	< #SAFE_TEXT	:	(<ALPHA_NUMERIC>|<NUMBER>|<SAFE_SYMBOL>|<WIKI_NAME>|<WS>)+ >
+|	< #TEXT			:	(<ALPHA_NUMERIC>|<SYMBOL>|<WS>)+ >
+}
+
+<*>
+TOKEN : /* WHITESPACE */
+{
+	< #SPACE	: " " >
+|	< #TAB		: "\t" >
+|	< WS		: <SPACE>|<TAB> > 
+|	< NL		: "\n" | "\r" | "\r\n" >
+}
+
+<*>
+TOKEN: /* SYMBOL GROUPINGS */
+{
+	< NON_MARKUP_SYMBOL:
+		<DIVIDE>|<PERCENT>|<APOS>|<QUOTE>|<POUND>|<DOLAR>|<EURO>|<AMP>|<OPEN_PAREN>|
+		<CLOSE_PAREN>|<OPEN_BRACE>|<CLOSE_BRACE>|<SEMICOLON>|<AT>|<COLON>|
+		<COMMA>|<POINT>|<QUESTION>|<EXCLAIM>|<LT>|<GT>|<BACKSLASH>|<UNDERSCORE>
+	>
+|	< #MARKUP_SYMBOL:
+		<PLUS>|<MINUS>|<MULTIPLY>|<EQUALS>|<TILDE>|<HASH>|<HAT>|<ACUTE>|
+		<BAR>|<OPEN_INDEX>|<CLOSE_INDEX>
+	>
+|	< ESCAPED_SYMBOL:
+		<ESC_PLUS>|<ESC_MINUS>|<ESC_MULTIPLY>|<ESC_EQUALS>|<ESC_TILDE>|<ESC_HASH>|
+		<ESC_HAT>|<ESC_ACUTE>|<ESC_BAR>|<ESC_OPEN_INDEX>|<ESC_CLOSE_INDEX>
+	>{ trimEndsBy(matchedToken,1); }
+|	< SPECIAL_SYMBOL:
+		<FURTHER>
+	>
+|	< #SYMBOL: <MARKUP_SYMBOL>|<SAFE_SYMBOL>|<ESCAPED_SYMBOL>|<SPECIAL_SYMBOL> >
+|	< #SAFE_SYMBOL: <NON_MARKUP_SYMBOL>|<ESCAPED_SYMBOL>|<SPECIAL_SYMBOL> >
+}
+
+<*>
+TOKEN: /* SPECIAL COMPOSITE SYMBOLS */
+{
+	< #FURTHER: ":-" >
+}
+
+<*>
+TOKEN: /* MARKUP SYMBOLS */
+{
+	< PLUS			:	"+" >
+|	< MINUS			:	"-" >
+|	< MULTIPLY		:	"*" >
+|	< EQUALS		:	"=" >
+|	< TILDE			:	"~" >
+|	< HASH			:	"#" >
+|	< HAT			:	"^" >
+|	< ACUTE			:	"`" >
+|	< BAR			:	"|" >
+|	< OPEN_INDEX	:	"[" >
+|	< CLOSE_INDEX	:	"]" >
+}
+
+<*>
+TOKEN: /* SAFE SYMBOLS */
+{
+	< #DIVIDE		:	"/" >
+|	< #PERCENT		:	"%" >
+|	< #APOS			:	"'" >
+|	< #QUOTE		:	"\"" >
+|	< #POUND		:	"£" >
+|	< #DOLAR		:	"$" >
+|	< #EURO			:	"€" >
+|	< #AMP			:	"&" >
+|	< #OPEN_PAREN	:	"(" >
+|	< #CLOSE_PAREN	:	")" >
+|	< #OPEN_BRACE	:	"{" >
+|	< #CLOSE_BRACE	:	"}" >
+|	< #COLON		:	":" >
+|	< #SEMICOLON	:	";" >
+|	< #AT			:	"@" >
+|	< #COMMA		:	"," >
+|	< #POINT		:	"." >
+|	< #QUESTION		:	"?" >
+|	< #EXCLAIM		:	"!" >
+|	< #LT			:	"<" >
+|	< #GT			:	">" >
+}
+
+<*>
+TOKEN: /* ESCAPED SYMBOLS */
+{
+	< #BACKSLASH		:	"\\" >
+|	< #UNDERSCORE		:	"_"	>
+|	< #ESC_PLUS			:	"\\+" >
+|	< #ESC_MINUS		:	"\\-" >
+|	< #ESC_MULTIPLY		:	"\\*" >
+|	< #ESC_EQUALS		:	"\\=" >
+|	< #ESC_TILDE		:	"\\~" >
+|	< #ESC_HASH			:	"\\#" >
+|	< #ESC_HAT			:	"\\^" >
+|	< #ESC_ACUTE		:	"\\`" >
+|	< #ESC_BAR			:	"\\|" >
+|	< #ESC_OPEN_INDEX	:	"\\[" >
+|	< #ESC_CLOSE_INDEX	:	"\\]" >
+}
+
+/* Transpositions */
+
+<*>
+TOKEN:
+{
+	< ALIEN: // This hides all the included tokens.
+		<COPYRIGHT>|<REGISTERED>|<ELIPSES>|<MDASH>|<OPEN_DQUOTE>|<CLOSE_DQUOTE>|
+		<OPEN_SQUOTE>|<CLOSE_SQUOTE>|<TRADEMARK>|<HALF>|<QUARTER>
+	>}
+
+<*>
+TOKEN:
+{
+	// These all generate warnings as they match <ALIEN> and will
+	// never produce an actual token themselves.
+	
+	// In an ideal world they would be private, but lexical
+	// actions are not possible on private tokens.
+	// This is OK.
+	
+	< COPYRIGHT		:	"\u0169" >{matchedToken.image = "(c)";}
+|	< REGISTERED	:	"\u0174" >{matchedToken.image = "(r)";}
+|	< ELIPSES		:	"\u0113" >{matchedToken.image = "...";}
+|	< MDASH			:	"\u20124" >{matchedToken.image = "-";}
+|	< OPEN_DQUOTE	:	"\u0147" >{matchedToken.image = "\"";}
+|	< CLOSE_DQUOTE	:	"\u0148" >{matchedToken.image = "\"";}
+|	< OPEN_SQUOTE	:	"\u0145" >{matchedToken.image = "'";}
+|	< CLOSE_SQUOTE	:	"\u0146" >{matchedToken.image = "'";}
+|	< TRADEMARK		:	"\u0153" >{matchedToken.image = "(tm)";}
+|	< HALF			:	"\u0189" >{matchedToken.image = "1/2";}
+|	< QUARTER		:	"\u0188" >{matchedToken.image = "1/4";}}
+
+<*>
+TOKEN:
+{
+	< #UNKNOWN	: ~[] >
+|	< #NONASCII	: ["\u0080"-"\uFFFF"] >
+}
+
+/******************************************
+ **** NON-TERMINALS/PRODUCTIONS/PARSER ****
+ ******************************************/
+
+// This is where we infer higher level
+// compositions of the base tokens
+// all "clever" matching should occur here.
+
+// We have a simple document model and our
+// parser uses the tree constructed from this
+// model as a context stack where push/pop
+// the current node.
+
+/* Inline Products */
+
+
+/* Block Products */

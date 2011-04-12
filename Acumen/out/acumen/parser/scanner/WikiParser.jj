@@ -1,0 +1,774 @@
+/**
+ * User: Guy J. Murphy
+ * Date: Jan 14, 2010
+ * Time: 2:22:57 PM
+ * File: WikiParser.jj
+ * Reference: http://www.alanwood.net/unicode/unicode_samples.html
+ */
+ 
+options {
+  JDK_VERSION = "1.6";
+  STATIC = false;
+  UNICODE_INPUT = true;
+  CACHE_TOKENS = true;
+  LOOKAHEAD = 5; // 1 is the default
+  CHOICE_AMBIGUITY_CHECK = 4; // 2 is the default
+  OTHER_AMBIGUITY_CHECK = 2; // 1 is the default
+  FORCE_LA_CHECK = false; // false is the default, set this to true to check lookahead adequacy for the *compile/build*
+}
+
+// This is the boilerplate code for the resulting
+// Java class produced from this file. There shouldn't
+// be a lot of interest in this.
+
+PARSER_BEGIN(WikiParser)
+package acumen.parser.scanner;
+
+import acumen.parser.model.*;
+import acumen.util.StringUtil;
+import java.io.StringReader;
+
+public class WikiParser extends acumen.parser.BaseParser {
+	public WikiParser (String text)
+	{
+	  this(new StringReader(text));
+	}
+}
+PARSER_END(WikiParser)
+
+/**********************************
+ **** LEXICAL ACTION FUNCTIONS ****
+ **********************************/
+
+// These functions are available to lexical actions
+// only as they get rolled into the token manager.
+
+TOKEN_MGR_DECLS:
+{
+	
+	public void trimEndsBy(Token token, int numberOfCharacters)
+	{
+		token.image = StringUtil.trimEndsBy(token.image, numberOfCharacters);
+	}
+
+	public void trimLeftBy(Token token, int numberOfCharacters)
+	{
+		token.image = StringUtil.trimLeftBy(token.image, numberOfCharacters);
+	}
+
+	public void trimRightBy(Token token, int numberOfCharacters)
+	{
+		token.image = StringUtil.trimLeftBy(token.image, numberOfCharacters);
+	}
+}
+
+//SKIP :
+//{
+//"�"|"�"
+//}
+
+/**************************
+ **** SOFT PRODUCTIONS ****
+ **************************/
+ 
+// These are placed here to have a higher priority from
+// the true terminal tokens but logically extend the
+// terminal tokens provided bellow. I'm not sure yet
+// whether this section is a good idea, or whether
+// it should really be done with productions.
+
+<*>
+TOKEN:
+{
+	< URL: ("http"|"ftp"|"https"|"ftps")":"(<SOLID_TEXT>)+ >
+|	< TOPIC_LINK: "["<WIKI_NAME>"]" >
+|	< LINK: "["<SOLID_TEXT>"]" >
+}
+/*** HEADINGS ***/
+<DEFAULT>
+TOKEN:
+{
+	< #HEADING: ("="){2,5} >
+|	< OPEN_HEADING : (<WS>)*<HEADING> > : IN_HEADING
+}
+<IN_HEADING>
+TOKEN:
+{
+	< CLOSE_HEADING : <HEADING>(<WS>)* >: DEFAULT
+}
+
+/*** BOXES ***/
+<DEFAULT>
+TOKEN:
+{
+	< #BLOCK_BOX: "***"("*")* >
+|	< #BLOCK_QUOTE: "~~~"("~")* >
+|	< #BLOCK_FORM: "+++"("+")* >
+|	< OPEN_BLOCK_BOX	: <BLOCK_BOX><NL> 	> : IN_BLOCK 
+|	< OPEN_BLOCK_QUOTE	: <BLOCK_QUOTE><NL>	> : IN_BLOCK
+|	< OPEN_BLOCK_FORM	: <BLOCK_FORM><NL>	> : IN_BLOCK
+}
+<IN_BLOCK>
+TOKEN:
+{
+	< CLOSE_BLOCK_BOX	: <BLOCK_BOX><NL>	>: DEFAULT
+|	< CLOSE_BLOCK_QUOTE	: <BLOCK_QUOTE><NL> 	>: DEFAULT
+|	< CLOSE_BLOCK_FORM	: <BLOCK_FORM><NL>	>: DEFAULT
+}
+<DEFAULT>
+TOKEN:
+{
+	< #BLOCK_CODE: "###"("#")* >
+|	< OPEN_BLOCK_CODE	: <BLOCK_CODE><NL>	> : IN_CODE
+}
+<IN_CODE>
+TOKEN:
+{
+	< CLOSE_BLOCK_CODE	: <BLOCK_CODE><NL>	>: DEFAULT
+|   	< CODE_TEXT: (~["\r","\n"])+ >: IN_CODE
+}
+<IN_BLOCK,IN_CODE>
+TOKEN:
+{
+  < BLOCK_TITLE			: "."<SAFE_TEXT><NL>>{ trimLeftBy(matchedToken,1); }
+}
+/*** TABLES ***/
+<DEFAULT>
+TOKEN:
+{
+	< #BLOCK_TABLE: "---"("-")* >
+|	< OPEN_BLOCK_TABLE	: <BLOCK_TABLE><NL> > : IN_TABLE
+}
+<IN_TABLE>
+TOKEN:
+{
+	< CLOSE_BLOCK_TABLE	: <BLOCK_TABLE><NL>	>: DEFAULT
+}
+
+
+/*************************
+ **** TERMINAL TOKENS ****
+ *************************/
+
+// These all match within the universal state <*>
+// meaning they will match even if you're switching
+// in and out of other states for block
+// matching etc.
+
+// Terminal tokens should be kept as simple as
+// possible with complicated matching take place with
+// productions.
+ 
+<*>
+TOKEN:
+{
+	< #UNKNOWN: ~[] >
+|	< #NONASCII: ["\u0080"-"\uFFFF"] >
+}
+
+<*>
+TOKEN: /* MARKUP */
+{
+	< OPEN_ANCHOR: "<<" >
+|	< CLOSE_ANCHOR: ">>" >
+}
+<*>
+TOKEN : /* RANGES */
+{
+  	< #CONTROLS_AND_BASIC_LATIN:		["\u0000"-"\u007F"]> /*OMMITED*/
+| 	< #CONTROLS_AND_LATIN1_SUPPLEMENT:	["\u0080"-"\u00FF"]>
+| 	< #LATIN_EXTENDED_A:				["\u0100"-"\u017F"]> /*OMMITED*/
+| 	< #LATIN_EXTENDED_B:				["\u0180"-"\u024F"]> /*OMMITED*/
+| 	< #LATIN_EXTENDED_ADDITIONAL:		["\u1E00"-"\u1EFF"]> /*OMMITED*/
+| 	< #GENERAL_PUNCTUATION:				["\u2000"-"\u206F"]> /*OMMITED*/
+| 	< #SUPER_AND_SUB_SCRIPT:			["\u2070"-"\u209F"]> /*OMMITED*/
+| 	< #CURRENCY_SYMBOL:					["\u20A0"-"\u20CF"]> /*OMMITED*/
+| 	< #CYRILLIC:						["\u0400"-"\u04FF"]> /*OMMITED*/
+| 	< #CYRILLIC_SUPPLEMENT:				["\u0500"-"\u052F"]> /*OMMITED*/
+| 	< #UNICODE_RANGES:
+		<CONTROLS_AND_LATIN1_SUPPLEMENT>|<LATIN_EXTENDED_A>|
+		<LATIN_EXTENDED_B>|<LATIN_EXTENDED_ADDITIONAL>
+	>
+}
+<*>
+TOKEN : /* TEXT */
+{
+	< #WIKI_NAME: (((["A"-"Z"])(["a"-"z","A"-"Z"])*)((["A"-"Z"])(["a"-"z","A"-"Z"])+)+)+ >
+|	< #NUMBER: (<DIGIT>)+((<POINT>|<COMMA>|<MINUS>|<PLUS>)(<DIGIT>)+)* >
+|	< #ALPHA_NUMERIC:(<NUMBER><ALPHA>(<NUMBER>|<ALPHA>|<MINUS>|<PLUS>)*)|(<ALPHA>(<NUMBER>|<ALPHA>|<MINUS>|<PLUS>)*)+ >
+|	< #DIGIT: ["0" - "9"] >
+|	< #UPPER: ["A" - "Z"] >
+|	< #LOWER: ["a" - "z"] >
+|	< #ALPHA: <LOWER>|<UPPER>|<FOREIGN> >
+|	< #SOLID_TEXT: (~[" ","	","\r","\n"])+ >
+|	< #TEXT: (<ALPHA_NUMERIC>|<SYMBOL>|<WS>)+ >
+|	< SAFE_TEXT: (<CONTROLS_AND_LATIN1_SUPPLEMENT>|<ALPHA_NUMERIC>|<NUMBER>|<SAFE_SYMBOL>|<WIKI_NAME>|<WS>)+ >
+}
+<*>
+TOKEN : /* WHITESPACE */
+{
+	< #SPACE: " " >
+|	< #TAB: "\t" >
+|	< WS: <SPACE>|<TAB> > 
+|	< NL: "\n" | "\r" | "\r\n" >
+}
+<*>
+TOKEN: /* SYMBOL GROUPINGS */
+{
+	< NON_MARKUP_SYMBOL:
+		<DIVIDE>|<PERCENT>|<APOS>|<QUOTE>|<POUND>|<DOLAR>|<AMP>|<OPEN_PAREN>|
+		<CLOSE_PAREN>|<OPEN_BRACE>|<CLOSE_BRACE>|<SEMICOLON>|<AT>|<COLON>|
+		<COMMA>|<POINT>|<QUESTION>|<EXCLAIM>|<BACKSLASH>|<UNDERSCORE>|
+		<L_SINGLE_QUOTE>|<R_SINGLE_QUOTE>|<NDASH>|<MDASH>|<BULLET>|<EURO>|<L_DOUBLE_QUOTE>|
+		<R_DOUBLE_QUOTE>
+	>
+|	< #MARKUP_SYMBOL:
+		<PLUS>|<MINUS>|<MULTIPLY>|<EQUALS>|<TILDE>|<HASH>|<HAT>|<ACUTE>|
+		<BAR>|<OPEN_INDEX>|<CLOSE_INDEX>|<LT>|<GT>
+	>
+|	< ESCAPED_SYMBOL:
+		<ESC_PLUS>|<ESC_MINUS>|<ESC_MULTIPLY>|<ESC_EQUALS>|<ESC_TILDE>|<ESC_HASH>|
+		<ESC_HAT>|<ESC_ACUTE>|<ESC_BAR>|<ESC_OPEN_INDEX>|<ESC_CLOSE_INDEX>
+	>{ trimEndsBy(matchedToken,1); }
+|	< SPECIAL_SYMBOL:
+		<FURTHER>|<HYPHEN>
+	>
+|	< #SYMBOL: <MARKUP_SYMBOL>|<SAFE_SYMBOL>|<ESCAPED_SYMBOL>|<SPECIAL_SYMBOL> >
+|	< #SAFE_SYMBOL: <NON_MARKUP_SYMBOL>|<ESCAPED_SYMBOL>|<SPECIAL_SYMBOL> >
+}
+<*>
+TOKEN: /* SPECIAL COMPOSITE SYMBOLS */
+{
+	< #FURTHER: ":-" >
+| 	< #HYPHEN: " - " >
+}
+<*>
+TOKEN: /* FOREIGN CHARACTERS */
+{
+	< #EO: "\u0153" >
+| 	< #FOREIGN: <EO> >
+}
+<DEFAULT,IN_HEADING,IN_TABLE,IN_BLOCK>
+TOKEN : /* SYMBOLS */
+{
+	< PLUS: "+" >
+|	< MINUS: "-" >
+|	< MULTIPLY: "*" >
+|	< EQUALS: "=" >
+|	< TILDE: "~" >
+|	< HASH: "#" >
+|	< HAT: "^" >
+|	< ACUTE: "`" >
+|	< BAR: "|" >
+|	< OPEN_INDEX: "[" >
+|	< CLOSE_INDEX: "]" >
+|	< LT: "<" >
+|	< GT: ">" >
+|	< #DIVIDE: "/" >
+|	< #PERCENT: "%" >
+|	< #APOS: "'" >
+|	< #QUOTE: "\"" >
+|	< #POUND: "£" >
+|	< #DOLAR: "$" >
+|	< #AMP: "&" >
+|	< #OPEN_PAREN: "(" >
+|	< #CLOSE_PAREN: ")" >
+|	< #OPEN_BRACE: "{" >
+|	< #CLOSE_BRACE: "}" >
+|	< #COLON: ":" >
+|	< #SEMICOLON: ";" >
+|	< #AT: "@" >
+|	< #COMMA: "," >
+|	< #POINT: "." >
+|	< #QUESTION: "?" >
+|	< #EXCLAIM: "!" >
+|	< #BACKSLASH: "\\" >
+|	< #UNDERSCORE: "_" >
+|	< #ESC_PLUS: "\\+" >
+|	< #ESC_MINUS: "\\-" >
+|	< #ESC_MULTIPLY: "\\*" >
+|	< #ESC_EQUALS: "\\=" >
+|	< #ESC_TILDE: "\\~" >
+|	< #ESC_HASH: "\\#" >
+|	< #ESC_HAT: "\\^" >
+|	< #ESC_ACUTE: "\\`" >
+|	< #ESC_BAR: "\\|" >
+|	< #ESC_OPEN_INDEX: "\\[" >
+|	< #ESC_CLOSE_INDEX: "\\]" >
+|	< #L_SINGLE_QUOTE: "\u2018" >
+|	< #R_SINGLE_QUOTE: "\u2019" >
+|	< #SINGLE_LOW_QUOTE: "\u201a" >
+|	< #L_DOUBLE_QUOTE: "\u201c" >
+|	< #R_DOUBLE_QUOTE: "\u201d" >
+|	< #NDASH: "\u2013" >
+|	< #MDASH: "\u2014" >
+|	< #BULLET: "\u2022" >
+|	< #EURO: "\u20ac" >
+}
+
+/*************************************
+ **** NON-TERMINALS / PRODUCTIONS ****
+ *************************************/
+
+// this is where we infer higher order
+// compositions of the base tokens
+// all "clever" matching should occur here
+
+/* Inline Products */
+
+public void wiki ():
+{
+	
+}
+{
+	{
+		this.pushElement(new DocumentElement());
+	}
+	(
+		blocks()|
+		heading()|
+		list()|
+		empty_line()
+	)*
+}
+
+public void line ():
+{
+	Token t = null;
+}
+{
+	{
+		if (token_source.curLexState == WikiParserConstants.IN_TABLE)
+		{
+			this.pushElement(new TableRowElement());
+		}
+		else
+		{
+			this.pushElement(new LineElement());
+		}
+	}
+	content()(new_line()|<EOF>)
+	{
+		if (token_source.curLexState == WikiParserConstants.IN_TABLE)
+		{
+			((TableRowElement)this.getCurrent()).parse();
+		}
+		this.popElement();
+	}
+}
+
+public void code_line ():
+{
+	Token t = null;
+}
+{
+	{
+		this.pushElement(new LineElement());
+	}
+	code_text()(new_line()|<EOF>)
+	{
+		this.popElement();
+	}
+}
+
+public void box ():
+{
+}
+{
+	{
+		this.pushElement(new BoxElement());
+	}
+	<OPEN_BLOCK_BOX>
+	box_content()
+	<CLOSE_BLOCK_BOX>
+	{
+		this.popElement();
+	}
+}
+
+public void code ():
+{
+}
+{
+  {
+	this.pushElement(new CodeElement());
+  }
+  <OPEN_BLOCK_CODE>
+	code_content()
+  <CLOSE_BLOCK_CODE>
+  {
+    this.popElement();
+  }
+}
+
+public void table ():
+{
+}
+{
+	{
+		this.pushElement(new TableElement());
+	}
+	<OPEN_BLOCK_TABLE>
+	block_content()
+	<CLOSE_BLOCK_TABLE>
+	{
+		this.popElement();
+	}
+}
+
+public void block_quote ():
+{
+}
+{
+	{
+		this.pushElement(new BlockQuoteElement());
+	}
+	<OPEN_BLOCK_QUOTE>
+	box_content()
+	<CLOSE_BLOCK_QUOTE>
+	{
+		this.popElement();
+	}
+}
+
+public void form ():
+{
+}
+{
+	{
+		System.out.print("<form>\n");
+	}
+	<OPEN_BLOCK_FORM>
+	block_content()
+	<CLOSE_BLOCK_FORM>
+	{
+		System.out.print("</form>\n");
+	}
+}
+
+public void block ():
+{
+	
+}
+{
+	{
+		this.pushElement(new BlockElement());
+	}
+	block_content()
+	{
+		this.popElement();
+	}
+}
+
+public void block_content():
+{
+}
+{
+	(block_title())?(line())+
+}
+
+public void box_content():
+{
+}
+{
+	(block_title())?(line()|empty_line())+
+}
+
+public void code_content():
+{
+}
+{
+  (block_title())?(code_line()|empty_line())+
+}
+
+public void block_title():
+{
+	Token t = null;
+}
+{
+	{
+		
+	}
+	t=<BLOCK_TITLE>
+	{
+		this.addChildElement(new TitleElement(t.image));
+	}
+}
+
+public void blocks ():
+{
+}
+{
+	code()|block()|block_quote()|table()|box()|form()
+}
+
+
+public void empty_line ():
+{
+
+}
+{
+	(whitespace())*new_line()
+	{
+		this.addChildElement(new EmptyLineElement());
+	}
+}
+
+public void whitespace():
+{
+	Token t = null;
+}
+{
+	t=<WS>
+	{
+		this.addChildElement(new WhitespaceElement(t.image));
+	}
+}
+
+public void new_line():
+{
+
+}
+{
+	<NL>
+	{
+		
+	}
+}
+
+public void list ():
+{
+	
+}
+{
+	{
+		this.pushElement(new ListElement());
+	}
+	(list_item1()|list_item2()|list_item3()|list_item4())+
+	{
+	  	((ListElement)this.getCurrent()).postProcess();
+		this.popElement();
+	}
+}
+
+public void list_item1():
+{
+}
+{
+	{
+	  	ListItemElement li = new ListItemElement();
+	  	li.setLevel(0);
+		this.pushElement(li);
+	}
+	<MULTIPLY>content()<NL>
+	{
+		this.popElement();
+	}
+}
+
+public void list_item2():
+{
+}
+{
+	{
+	  	ListItemElement li = new ListItemElement();
+	  	li.setLevel(1);
+		this.pushElement(li);
+	}
+	<MULTIPLY><MULTIPLY>content()<NL>
+	{
+		this.popElement();
+	}
+}
+
+public void list_item3():
+{
+}
+{
+	{
+	  	ListItemElement li = new ListItemElement();
+	  	li.setLevel(2);
+		this.pushElement(li);
+	}
+	<MULTIPLY><MULTIPLY><MULTIPLY>content()<NL>
+	{
+		this.popElement();
+	}
+}
+
+public void list_item4():
+{
+}
+{
+	{
+	  	ListItemElement li = new ListItemElement();
+	  	li.setLevel(3);
+		this.pushElement(li);
+	}
+	<MULTIPLY><MULTIPLY><MULTIPLY><MULTIPLY>content()<NL>
+	{
+		this.popElement();
+	}
+}
+
+public void link ():
+{
+	Token t = null;
+}
+{
+	{
+	}
+	t=<LINK>
+	{
+		this.addChildElement(new LinkElement(t.image));
+	}
+}
+
+public void topic_link ():
+{
+	Token t = null;
+}
+{
+	{
+		
+	}
+	t=<TOPIC_LINK>
+	{
+		this.addChildElement(new LinkElement(t.image));
+	}
+}
+
+public void safe_text ():
+{
+	Token t = null;
+}
+{
+	t=<SAFE_TEXT>
+	{
+		this.addChildElement(new TextElement(t.image));
+	}
+}
+
+public void code_text ():
+{
+	Token t = null;
+}
+{
+	t=<CODE_TEXT>
+	{
+		this.addChildElement(new TextElement(t.image));
+	}
+}
+
+public void emphasis ():
+{
+	
+}
+{
+	{
+		this.pushElement(new EmphasisElement());
+	}
+	<HAT>(bold()|link()|url()|safe_text())+<HAT>
+	{
+		this.popElement();
+	}
+}
+
+public void bold ():
+{
+}
+{
+	{
+		this.pushElement(new StrongElement());
+	}
+	<MULTIPLY>(emphasis()|links()|url()|safe_text())+<MULTIPLY>
+	{
+		this.popElement();
+	}
+}
+
+public void inline_code ():
+{
+}
+{
+  {
+    this.pushElement(new InlineCodeElement());
+  }
+  <ACUTE>(emphasis()|links()|url()|safe_text())+<ACUTE>
+  {
+    this.popElement();
+  }
+}
+
+// TODO: implement
+public void url ():
+{
+  	// wont ever match
+	Token t = null;
+}
+{
+	{
+		
+	}
+	t=<URL>
+	{
+
+	}
+}
+
+public void links ():
+{
+}
+{
+	link()|topic_link()|url()
+}
+
+public void content():
+{
+}
+{
+	(markup()|inline_code()|links()|bold()|emphasis()|safe_text()|whitespace())+
+}
+
+
+public void markup ():
+{
+}
+{
+  (lt()|gt())+    
+}
+
+public void lt ():
+{}{
+  <LT>
+  {
+    this.addChildElement(new TextElement("&lt;"));  }}
+
+public void gt ():
+{
+}
+{
+  <GT>
+  {
+    this.addChildElement(new TextElement("&gt;"));
+  }
+}
+
+public void heading ():
+{
+	Token open = null;
+	Token close = null;
+}
+{
+ 	open=<OPEN_HEADING>
+ 	{
+ 		this.pushElement(new HeadingElement(open.image.length()));
+ 	}
+ 	safe_text()
+ 	close=<CLOSE_HEADING>
+ 	{
+ 		this.popElement();
+ 	}
+ 	new_line()
+}
+
