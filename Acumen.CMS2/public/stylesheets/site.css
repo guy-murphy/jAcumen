@@ -1,0 +1,237 @@
+/* Typography */
+
+body {
+	
+}
+
+a {
+  color: #990000;
+  text-decoration: none;
+}
+
+a:hover {
+  border-width: 1px;
+  border-bottom-style: solid;
+}
+
+code {
+	padding-left: 1px;
+	padding-right: 1px;
+	border-color: #cccccc;
+	border-width: 1px;
+	border-style: solid;
+}
+
+label {
+  position: relative;
+  top: 0.75em;
+}
+
+td, th {
+  vertical-align: top;
+}
+
+#right-col h1,#right-col h2,#right-col h3,#right-col h4,#right-col h5 {
+	margin-top: 0.25em;
+	margin-bottom: 0.25em;
+}
+
+.inplace {
+	border-color: #c3d9ff;
+	border-left-width: 3px;
+	border-style: solid;
+	padding-left: 0.5em;
+}
+
+.inplace_save, .inplace_cancel {
+	font-size: 10pt;
+	padding: 2px;
+}
+
+/* Structure */
+
+.sub-menu {
+	position: absolute;
+	background-color: #ffffcc;
+	padding-top: 0.5em;
+	border-color: #cccccc;
+	border-width: 1px;
+	border-style: solid;
+	-moz-border-radius-bottomleft: 5px;
+	-moz-border-radius-bottomright: 5px;
+	-webkit-border-bottom-left-radius: 5px;
+	-webkit-border-bottom-right-radius: 5px;
+	display: none;
+}
+
+.type-relations {
+	
+}
+
+.related-type, .link-related-type {
+	font-size: 1.2em;
+	line-height: 1.25em;
+}
+
+.role-relations, .link-role-relations {
+	margin-left: 1em;
+}
+
+.related-role, .link-related-role {
+	font-size: 1em;
+	font-weight: bold;
+}
+
+.topic-links {
+	margin-left: -2em;
+}
+
+.topic-link {
+	
+}
+
+.link-related-role {
+  padding-left: 2em;
+}
+
+.link-reference {
+  width: 33%;
+}
+
+.link-spacer {
+  width: 2em;
+}
+
+.help {
+  color: #666666;
+}
+
+/* Control Elements */
+
+.subdued {
+	color: #999999;
+}
+
+.subdued:focus {
+	color: #333333;
+}
+
+.editor {
+	height: 475px;
+	width: 475px;
+}
+
+/* Overrides */
+
+.highlight {
+	background-color: #ffffcc;
+}
+
+/* Metadata */
+
+.metadata, .occurences, .associations {
+
+}
+
+.metadata th, .occurence th {
+	width: 10%;
+	text-align: right;
+}
+
+.associations th {
+  width: 25%;
+  text-align: center;
+}
+
+.associations .inplace {
+  border-color: #cccccc;
+  border-width: 1px;
+  border-bottom-style: solid
+}
+
+/* Blogs */
+
+.blog-entry h3 {
+  margin-bottom: 0.25em;
+}
+
+/* Pop out boxes */
+
+.large-wrapper {
+  height: 4em;
+}
+
+.large-wrapper .pop-out-head {
+  font-size: 12pt;
+}
+
+.small-wrapper {
+  height: 2.5em;
+}
+
+ul.notice, ul.error, ul.success {
+  padding-left: 3em;
+}
+
+.pop-out hr {
+  height: 5px;
+  padding: 0px;
+  margin: 0px;
+  display: block;
+	border: none;
+	height: 1px;
+	color: #990000;
+	background: #990000;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.pop-out {
+  display: block;
+  position: absolute;
+  background-color: #ffffcc;
+
+  border-color: #cccc99;
+  border-width: 2px;
+  border-style: solid;
+	-webkit-box-shadow: 0.1em 0.1em 0.1em rgba(0,0,0,0.1);
+	-moz-box-shadow: rgba(0,0,0,0.1) 0.1em 0.1em 0.1em;
+	
+}
+
+.pop-out ul {
+  margin: 0px;
+  padding-left: 1em;
+}
+
+.pop-out-head {
+  padding: 0.25em;
+  padding-right: 1em;
+
+  color: #333333;
+  position: relative;
+  z-index: 10;
+}
+
+.hover .pop-out-head {
+  color: #990000;
+  cursor: pointer;
+	cursor: hand;
+}
+
+.pop-out-body {
+  display: none;
+  position: relative;
+	z-index: 10;
+	top: 0;
+	right: 0;
+  background-color: #ffffee;
+  padding: 1em;
+  margin-bottom: 1.5em;
+}
+
+#topic_images {
+  width:450px;
+  margin:20px auto;
+}
+

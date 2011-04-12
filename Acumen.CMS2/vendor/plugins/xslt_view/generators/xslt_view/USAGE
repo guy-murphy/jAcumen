@@ -1,0 +1,8 @@
+Description:
+    The generator creates an XSL view template for the specified view
+
+Example:
+    ./script/generate xslt_view topic update
+
+    This will create:
+        Views/topic/update.xsl
